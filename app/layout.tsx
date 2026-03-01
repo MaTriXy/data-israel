@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import ConvexClientProvider from '@/context/ConvexClientProvider';
@@ -60,6 +60,12 @@ export async function generateMetadata(): Promise<Metadata> {
                 },
             ],
         },
+    };
+}
+
+export function generateViewport(): Viewport {
+    return {
+        themeColor: '#2d4b8e',
     };
 }
 

@@ -12,6 +12,7 @@ import type * as datasets from "../datasets.js";
 import type * as guests from "../guests.js";
 import type * as http from "../http.js";
 import type * as mastra_storage from "../mastra/storage.js";
+import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as rag from "../rag.js";
 import type * as resources from "../resources.js";
 import type * as search from "../search.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   guests: typeof guests;
   http: typeof http;
   "mastra/storage": typeof mastra_storage;
+  pushSubscriptions: typeof pushSubscriptions;
   rag: typeof rag;
   resources: typeof resources;
   search: typeof search;

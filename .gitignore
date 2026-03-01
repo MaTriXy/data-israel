@@ -51,3 +51,5 @@ mastra.db-wal
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+certificates

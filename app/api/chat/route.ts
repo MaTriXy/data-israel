@@ -21,6 +21,7 @@ import {
     type ToolCallPart,
 } from '@/components/chat/types';
 import { clearActiveStreamId, getResumableStreamContext, setActiveStreamId } from '@/lib/redis/resumable-stream';
+import { sendPushToUser } from '@/lib/push/send-notification';
 
 const { CHAT } = AgentConfig;
 
@@ -336,6 +337,13 @@ export async function POST(req: Request) {
 
                     // Clear the resumable stream mapping now that streaming is complete
                     void clearActiveStreamId(threadId);
+
+                    // Notify user that their answer is ready (fire-and-forget)
+                    void sendPushToUser(userId, {
+                        threadId,
+                        title: 'התשובה מוכנה ✨',
+                        body: 'התשובה לשאלתך מוכנה. לחץ כדי לצפות.',
+                    });
                 },
             },
             sendReasoning: true,

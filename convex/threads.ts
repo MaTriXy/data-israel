@@ -100,11 +100,23 @@ export const listUserThreadsPaginated = query({
 
         const resourceId = identity?.subject || guestId;
 
-        return await ctx.db
+        const q = ctx.db
             .query('mastra_threads')
             .withIndex('by_resource', (q) => q.eq('resourceId', resourceId))
-            .order('desc')
-            .paginate(paginationOpts);
+            .order('desc');
+
+        try {
+            return await q.paginate(paginationOpts);
+        } catch (error) {
+            // Cursor becomes invalid when the underlying query changes (e.g., auth
+            // identity change causes resourceId to differ from cursor's query).
+            // Reset to first page instead of surfacing the error.
+            const msg = error instanceof Error ? error.message : String(error);
+            if (msg.includes('InvalidCursor') || msg.includes('cursor')) {
+                return await q.paginate({ numItems: paginationOpts.numItems, cursor: null });
+            }
+            throw error;
+        }
     },
 });
 
@@ -317,14 +329,12 @@ export const upsertThreadBilling = mutation({
                 agentName: args.agentName,
                 usage: {
                     promptTokens: (existing.usage.promptTokens ?? 0) + (args.usage.promptTokens ?? 0),
-                    completionTokens:
-                        (existing.usage.completionTokens ?? 0) + (args.usage.completionTokens ?? 0),
+                    completionTokens: (existing.usage.completionTokens ?? 0) + (args.usage.completionTokens ?? 0),
                     totalTokens: (existing.usage.totalTokens ?? 0) + (args.usage.totalTokens ?? 0),
                     reasoningTokens:
                         (existing.usage.reasoningTokens ?? 0) + (args.usage.reasoningTokens ?? 0) || undefined,
                     cachedInputTokens:
-                        (existing.usage.cachedInputTokens ?? 0) + (args.usage.cachedInputTokens ?? 0) ||
-                        undefined,
+                        (existing.usage.cachedInputTokens ?? 0) + (args.usage.cachedInputTokens ?? 0) || undefined,
                 },
                 createdAt: Date.now(),
             });

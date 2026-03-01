@@ -118,6 +118,23 @@ export default defineSchema({
         .index('by_user', ['userId']),
 
     /**
+     * Push subscriptions table - stores Web Push subscription endpoints per user.
+     * Keyed by userId (Clerk ID or guest session ID) and endpoint (unique per device/browser).
+     * Used by `lib/push/send-notification.ts` to fan out push notifications.
+     */
+    push_subscriptions: defineTable({
+        userId: v.string(),
+        endpoint: v.string(),
+        keys: v.object({
+            p256dh: v.string(),
+            auth: v.string(),
+        }),
+        createdAt: v.number(),
+    })
+        .index('by_user_id', ['userId'])
+        .index('by_endpoint', ['endpoint']),
+
+    /**
      * Mastra tables - used by @mastra/convex for agent memory, threads, and storage
      */
     mastra_threads: mastraThreadsTable,

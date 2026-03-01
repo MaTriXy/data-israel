@@ -32,7 +32,8 @@ export default defineConfig([
         'out/**',
         'build/**',
         'next-env.d.ts',
-        // Reference files not part of the application:
+        // Service worker — plain JS with browser SW globals (self, clients) not known to ESLint:
+        'public/sw.js',
     ]),
     js.configs.recommended,
     ...tsEslint.configs.recommended,
