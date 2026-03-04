@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@/context/UserContext';
@@ -28,7 +28,12 @@ import { GeometricBackground } from '@/components/ui/shape-landing-hero';
 /** Agent configuration for the admin panel */
 const AGENT_CONFIGS = [
     { id: 'routing', label: 'סוכן ניתוב', dialogTitle: 'Routing Agent', icon: AgentsDisplayMap.routingAgent.icon },
-    { id: 'datagov', label: 'סוכן data.gov.il', dialogTitle: 'DataGov Agent', icon: AgentsDisplayMap.datagovAgent.icon },
+    {
+        id: 'datagov',
+        label: 'סוכן data.gov.il',
+        dialogTitle: 'DataGov Agent',
+        icon: AgentsDisplayMap.datagovAgent.icon,
+    },
     { id: 'cbs', label: 'סוכן הלמ"ס', dialogTitle: 'CBS Agent', icon: AgentsDisplayMap.cbsAgent.icon },
 ] as const;
 
@@ -178,91 +183,126 @@ export default function AdminPage() {
     return (
         <div className='relative h-full w-full' dir='rtl'>
             <GeometricBackground noShapes />
-        <div className='relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 py-12'>
-        <div className='w-full max-w-2xl'>
-            <h1 className='mb-8 text-3xl font-bold'>פאנל ניהול</h1>
-            <p className='text-muted-foreground mb-8'>בחר את המודל עבור כל סוכן. שינויים נכנסים לתוקף מיידית.</p>
+            <div className='relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 py-12'>
+                <div className='w-full max-w-2xl'>
+                    <h1 className='mb-8 text-3xl font-bold'>פאנל ניהול</h1>
+                    <p className='text-muted-foreground mb-8'>
+                        בחר את המודל עבור כל סוכן. שינויים נכנסים לתוקף מיידית.
+                    </p>
 
-            {isModelsLoading ? (
-                <ModelsLoadingState />
-            ) : modelsError ? (
-                <ModelsErrorState error={modelsError} onRetry={() => refetch()} />
-            ) : (
-                <div className='space-y-6'>
-                    {AGENT_CONFIGS.map((agent) => {
-                        const modelId = selectedModels[agent.id];
-                        const modelData = getModelDisplay(modelId, models);
+                    {isModelsLoading ? (
+                        <ModelsLoadingState />
+                    ) : modelsError ? (
+                        <ModelsErrorState error={modelsError} onRetry={() => refetch()} />
+                    ) : (
+                        <div className='space-y-6'>
+                            {AGENT_CONFIGS.map((agent) => {
+                                const modelId = selectedModels[agent.id];
+                                const modelData = getModelDisplay(modelId, models);
 
-                        return (
-                            <div key={agent.id} className='bg-background/80 rounded-lg border p-4 backdrop-blur-sm'>
-                                <h2 className='mb-3 flex items-center gap-2 text-lg font-semibold'>
-                                    <agent.icon className='size-5' />
-                                    {agent.label}
-                                </h2>
-                                <Button
-                                    variant='outline'
-                                    className='w-full justify-between'
-                                    onClick={() => setOpenDialog(agent.id)}
-                                >
-                                    <span className='flex items-center gap-2'>
-                                        <ModelSelectorLogo provider={modelData.providerSlug} />
-                                        <span>{modelData.name}</span>
-                                    </span>
-                                    <ChevronDown className='size-4 opacity-50' />
-                                </Button>
-                                <ModelPickerDialog
-                                    open={openDialog === agent.id}
-                                    onOpenChange={(open) => setOpenDialog(open ? agent.id : null)}
-                                    models={models}
-                                    selectedModelId={modelId}
-                                    onSelect={(id) => handleModelPicked(agent.id, id)}
-                                    title={`Select model — ${agent.dialogTitle}`}
-                                    showPrices
-                                />
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-            <AlertDialog open={pendingChange !== null} onOpenChange={(open) => { if (!open) setPendingChange(null); }}>
-                <AlertDialogContent size='sm' dir='rtl'>
-                    <AlertDialogHeader className='place-items-start text-right'>
-                        <AlertDialogTitle>אישור שינוי מודל</AlertDialogTitle>
-                        {pendingChange && (() => {
-                            const agentConfig = AGENT_CONFIGS.find((a) => a.id === pendingChange.agentId);
-                            const currentModel = getModelDisplay(selectedModels[pendingChange.agentId], models);
-                            const newModel = getModelDisplay(pendingChange.modelId, models);
-                            return (
-                                <AlertDialogDescription asChild>
-                                    <div className='w-full space-y-3 text-sm'>
-                                        <p className='flex items-center gap-2'>
-                                            {agentConfig && <agentConfig.icon className='size-4' />}
-                                            <span className='font-medium text-foreground'>{agentConfig?.label}</span>
-                                        </p>
-                                        <div className='bg-muted/50 flex w-full flex-col rounded-md p-3' dir='ltr'>
-                                            <div className='flex items-start gap-2'>
-                                                <ModelSelectorLogo provider={currentModel.providerSlug} className='mt-0.5 shrink-0' />
-                                                <span className='text-muted-foreground text-left'>{currentModel.name}</span>
-                                            </div>
-                                            <div className='border-border my-2 border-t' />
-                                            <div className='flex items-start gap-2'>
-                                                <ModelSelectorLogo provider={newModel.providerSlug} className='mt-0.5 shrink-0' />
-                                                <span className='font-medium text-foreground text-left'>{newModel.name}</span>
-                                            </div>
-                                        </div>
+                                return (
+                                    <div
+                                        key={agent.id}
+                                        className='bg-background/80 rounded-lg border p-4 backdrop-blur-sm'
+                                    >
+                                        <h2 className='mb-3 flex items-center gap-2 text-lg font-semibold'>
+                                            <agent.icon className='size-5' />
+                                            {agent.label}
+                                        </h2>
+                                        <Button
+                                            variant='outline'
+                                            className='w-full justify-between'
+                                            onClick={() => setOpenDialog(agent.id)}
+                                        >
+                                            <span className='flex items-center gap-2'>
+                                                <ModelSelectorLogo provider={modelData.providerSlug} />
+                                                <span>{modelData.name}</span>
+                                            </span>
+                                            <ChevronDown className='size-4 opacity-50' />
+                                        </Button>
+                                        <ModelPickerDialog
+                                            open={openDialog === agent.id}
+                                            onOpenChange={(open) => setOpenDialog(open ? agent.id : null)}
+                                            models={models}
+                                            selectedModelId={modelId}
+                                            onSelect={(id) => handleModelPicked(agent.id, id)}
+                                            title={`Select model — ${agent.dialogTitle}`}
+                                            showPrices
+                                        />
                                     </div>
-                                </AlertDialogDescription>
-                            );
-                        })()}
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>ביטול</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmChange}>אישור</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-        </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                    <AlertDialog
+                        open={pendingChange !== null}
+                        onOpenChange={(open) => {
+                            if (!open) setPendingChange(null);
+                        }}
+                    >
+                        <AlertDialogContent size='sm' dir='rtl' className='gap-8'>
+                            <AlertDialogHeader className='place-items-start text-right'>
+                                <AlertDialogTitle>אישור שינוי מודל</AlertDialogTitle>
+                                {pendingChange &&
+                                    (() => {
+                                        const agentConfig = AGENT_CONFIGS.find((a) => a.id === pendingChange.agentId);
+                                        const currentModel = getModelDisplay(
+                                            selectedModels[pendingChange.agentId],
+                                            models,
+                                        );
+                                        const newModel = getModelDisplay(pendingChange.modelId, models);
+                                        return (
+                                            <AlertDialogDescription asChild>
+                                                <div className='w-full space-y-3 text-sm'>
+                                                    <p className='flex items-center gap-2'>
+                                                        {agentConfig && <agentConfig.icon className='size-4' />}
+                                                        <span className='font-medium text-foreground'>
+                                                            {agentConfig?.label}
+                                                        </span>
+                                                    </p>
+                                                    <div className='flex w-full flex-col gap-5' dir='ltr'>
+                                                        <div>
+                                                            <span className='text-muted-foreground mb-1 block text-left text-xs'>
+                                                                Current
+                                                            </span>
+                                                            <div className='flex items-center gap-2'>
+                                                                <ModelSelectorLogo
+                                                                    provider={currentModel.providerSlug}
+                                                                    className='mt-0.5 shrink-0'
+                                                                />
+                                                                <span className='text-muted-foreground text-left'>
+                                                                    {currentModel.name}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <span className='text-foreground mb-1 block text-left text-xs'>
+                                                                New
+                                                            </span>
+                                                            <div className='flex items-center gap-2'>
+                                                                <ModelSelectorLogo
+                                                                    provider={newModel.providerSlug}
+                                                                    className='mt-0.5 shrink-0'
+                                                                />
+                                                                <span className='font-medium text-foreground text-left'>
+                                                                    {newModel.name}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </AlertDialogDescription>
+                                        );
+                                    })()}
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleConfirmChange}>אישור</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
         </div>
     );
 }
