@@ -9,20 +9,27 @@ interface StepProps {
     title: string;
     description: string;
     delay: number;
+    isLast: boolean;
 }
 
-function Step({ icon, title, description, delay }: StepProps) {
+function Step({ icon, title, description, delay, isLast }: StepProps) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, delay, ease: 'easeOut' }}
-            className='flex flex-col items-center gap-4 text-center'
+            className='relative flex flex-col items-center gap-4 text-center'
         >
-            <div className='flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-tint text-primary'>
+            {/* Connector line between steps */}
+            {!isLast && (
+                <div className='hidden md:block absolute top-5 -left-[calc(50%-20px)] w-[calc(100%-40px)] h-px bg-border/60' />
+            )}
+
+            <div className='relative z-10 flex items-center justify-center w-10 h-10 rounded-lg bg-primary-tint text-primary'>
                 {icon}
             </div>
+
             <h3 className='text-lg font-semibold text-foreground'>{title}</h3>
             <p className='text-sm text-muted-foreground leading-relaxed max-w-[280px]'>{description}</p>
         </motion.div>
@@ -31,17 +38,17 @@ function Step({ icon, title, description, delay }: StepProps) {
 
 const STEPS = [
     {
-        icon: <MessageSquareText className='w-7 h-7' />,
+        icon: <MessageSquareText className='w-6 h-6' />,
         title: 'שאלו שאלה',
         description: 'כתבו שאלה בעברית על נתונים ציבוריים — מחירים, דמוגרפיה, תחבורה ועוד',
     },
     {
-        icon: <Search className='w-7 h-7' />,
+        icon: <Search className='w-6 h-6' />,
         title: 'הסוכן חוקר',
         description: 'הסוכן מחפש במאגרי data.gov.il והלמ״ס, מסנן ומנתח את הנתונים הרלוונטיים.',
     },
     {
-        icon: <FileChartColumn className='w-7 h-7' />,
+        icon: <FileChartColumn className='w-6 h-6' />,
         title: 'תוצאות מדויקות',
         description: 'מקבלים תשובה מבוססת נתונים עם גרפים, טבלאות וקישורים למקורות הרשמיים',
     },
@@ -55,7 +62,7 @@ export function HowItWorksSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-50px' }}
                 transition={{ duration: 0.5 }}
-                className='text-2xl md:text-3xl font-bold text-center text-foreground mb-10'
+                className='text-2xl md:text-3xl font-bold text-center text-foreground mb-14'
             >
                 איך זה עובד?
             </motion.h2>
@@ -67,7 +74,8 @@ export function HowItWorksSection() {
                         icon={step.icon}
                         title={step.title}
                         description={step.description}
-                        delay={i * 0.15}
+delay={i * 0.15}
+                        isLast={i === STEPS.length - 1}
                     />
                 ))}
             </div>

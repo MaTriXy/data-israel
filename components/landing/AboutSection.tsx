@@ -18,13 +18,13 @@ function Feature({ icon, title, description, delay }: FeatureProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, delay, ease: 'easeOut' }}
-            className='flex flex-col items-center gap-3 text-center'
+            className='group relative flex flex-col items-center gap-3 text-center rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm p-6 transition-colors hover:border-primary/20 hover:bg-card/80'
         >
-            <div className='flex items-center justify-center w-12 h-12 rounded-xl bg-primary-tint text-primary'>
+            <div className='flex items-center justify-center w-10 h-10 rounded-lg bg-primary-tint text-primary'>
                 {icon}
             </div>
             <h3 className='text-base font-semibold text-foreground'>{title}</h3>
-            <p className='text-sm text-muted-foreground leading-relaxed max-w-[260px]'>{description}</p>
+            <p className='text-sm text-muted-foreground leading-relaxed'>{description}</p>
         </motion.div>
     );
 }
@@ -55,11 +55,6 @@ const FEATURES = [
 export function AboutSection() {
     return (
         <section id='about' className='w-full max-w-4xl mx-auto px-4'>
-            {/* Subtle radial accent glow behind hero */}
-            <div
-                className='pointer-events-none absolute inset-0 z-[-5] bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,oklch(0.80_0.10_250/0.20),transparent)]
-                    dark:bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,oklch(0.60_0.14_245/0.10),transparent)]'
-            />
             <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -85,7 +80,7 @@ export function AboutSection() {
                 </p>
             </motion.div>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 {FEATURES.map((feature, i) => (
                     <Feature
                         key={feature.title}
