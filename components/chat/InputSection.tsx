@@ -27,14 +27,14 @@ export function InputSection({ onSubmit, status, onStop, placeholder = 'מה ת�
     };
 
     return (
-        <PromptInput onSubmit={handleSubmit} className='bg-background flex'>
+        <PromptInput onSubmit={handleSubmit} className='bg-background flex rounded-full'>
             <PromptInputTextarea
                 className='h-fit min-h-0 p-0 ps-1 md:ps-2 text-sm md:text-base'
                 placeholder={placeholder}
                 disabled={isBusy}
             />
             <PromptInputSubmit
-                className='self-end rounded-2xl bg-action'
+                className='self-end rounded-full bg-action text-white dark:text-black transition-all duration-300 ease-out hover:scale-105 hover:bg-action-dark active:scale-[1.02] active:translate-y-px'
                 status={status !== 'streaming' ? status : 'submitted'}
                 onClick={isBusy ? handleStopClick : undefined}
                 disabled={!isReady && isBusy}

@@ -1,19 +1,25 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
+import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 import { HeroSection } from '@/components/chat/HeroSection';
 import { SourcesSection } from '@/components/landing/SourcesSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { AboutSection } from '@/components/landing/AboutSection';
 import { Footer } from '@/components/landing/Footer';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
-import { BGPattern } from '@/components/bg-pattern';
+import { AmbientGlow } from '@/components/ui/AmbientGlow';
 
 export default function Home() {
     const router = useRouter();
     const scrollRef = useRef<HTMLDivElement>(null);
+    const isMobile = useIsMobile();
+    const glowSize = isMobile ? 400 : 800;
+    const glowSizeSm = isMobile ? 350 : 700;
 
     const handleStartConversation = () => {
         const chatId = crypto.randomUUID();
@@ -26,10 +32,11 @@ export default function Home() {
     }, []);
 
     return (
-        <div ref={scrollRef} className='relative h-full w-full overflow-y-auto'>
-            {/* Hero Section — centered within first viewport */}
-            <BGPattern variant='dots' mask='fade-center' fill='hsla(217, 68%, 56%, 0.4)' className='bg-background' />
+        <div ref={scrollRef} className='relative h-full w-full overflow-y-auto overflow-x-clip'>
             <div className='relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 md:px-0'>
+                {/* Hero glows */}
+                <AmbientGlow top='15%' left='15%' size={glowSize} />
+                <AmbientGlow top='80%' left='85%' size={glowSize} />
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -38,24 +45,56 @@ export default function Home() {
                         duration: 0.8,
                         ease: 'easeInOut',
                     }}
-                    className='flex flex-col gap-4 md:gap-6 w-full items-center justify-center'
+                    className='relative z-10 flex flex-col gap-4 md:gap-6 w-full items-center justify-center'
                 >
                     <HeroSection onStartConversation={handleStartConversation} onScrollToAbout={handleScrollToAbout} />
                 </motion.div>
+
+                {/* Stars background at the bottom of hero viewport */}
+                <div className='pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[30vh] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_40%)]'>
+                    <StarsBackground
+                        className='h-full'
+                        style={{ background: 'transparent' }}
+                        speed={80}
+                        factor={0.03}
+                        starColor='oklch(0.55 0.18 250)'
+                        pointerEvents={false}
+                    />
+                </div>
+
+                {/* "Learn more" pinned to bottom of hero viewport */}
+                <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.2, duration: 0.6 }}
+                    onClick={handleScrollToAbout}
+                    className='absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors'
+                >
+                    <span>קראו עוד</span>
+                    <ChevronDown className='w-4 h-4 animate-bounce' />
+                </motion.button>
             </div>
 
-            {/* Below-the-fold sections */}
-            <div className='relative z-10 flex flex-col gap-40 md:gap-48 py-24 md:py-36'>
-                <BGPattern
-                    variant='dots'
-                    mask='fade-center'
-                    fill='hsla(217, 68%, 56%, 0.4)'
-                    className='bg-background'
-                />
+            {/* Below-the-fold sections — reduced top padding for smooth hero→about flow */}
+            <div className='relative z-10 flex flex-col pt-0 pb-24 md:pb-36'>
+                <div className='relative py-20 md:py-28 overflow-visible'>
+                    <AmbientGlow top='30%' left='20%' size={glowSizeSm} />
+                    <AboutSection />
+                </div>
 
-                <AboutSection />
-                <SourcesSection />
-                <HowItWorksSection />
+                {/* Full-bleed tinted band for Sources — gradient edges for smooth transition */}
+                <div className='relative py-20 md:py-28 dark:via-muted/40 overflow-visible'>
+                    <AmbientGlow top='20%' left='85%' size={glowSize} />
+                    <AmbientGlow top='50%' left='40%' size={glowSize} />
+                    <AmbientGlow top='70%' left='15%' size={glowSize} />
+                    <SourcesSection />
+                </div>
+
+                <div className='relative py-20 md:py-28 overflow-visible'>
+                    <AmbientGlow top='25%' left='75%' size={glowSizeSm} />
+                    <AmbientGlow top='75%' left='20%' size={glowSizeSm} />
+                    <HowItWorksSection />
+                </div>
             </div>
 
             <div className='relative z-10'>

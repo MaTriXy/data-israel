@@ -18,13 +18,13 @@ function Feature({ icon, title, description, delay }: FeatureProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, delay, ease: 'easeOut' }}
-            className='flex flex-col items-center gap-3 text-center'
+            className='group relative flex flex-col items-center gap-3 text-center rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm p-6 transition-colors hover:border-primary/20 hover:bg-card/80'
         >
-            <div className='flex items-center justify-center w-12 h-12 rounded-xl bg-primary-tint text-primary'>
+            <div className='flex items-center justify-center w-10 h-10 rounded-lg bg-primary-tint text-primary'>
                 {icon}
             </div>
             <h3 className='text-base font-semibold text-foreground'>{title}</h3>
-            <p className='text-sm text-muted-foreground leading-relaxed max-w-[260px]'>{description}</p>
+            <p className='text-sm text-muted-foreground leading-relaxed'>{description}</p>
         </motion.div>
     );
 }
@@ -80,7 +80,7 @@ export function AboutSection() {
                 </p>
             </motion.div>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 {FEATURES.map((feature, i) => (
                     <Feature
                         key={feature.title}

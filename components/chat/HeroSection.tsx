@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { HeroSubtitle, HeroTitle } from '@/components/ui/shape-landing-hero';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Logo } from '@/components/ui/logo';
-import { Button } from '@/components/ui/button';
+import { CTAButton } from '@/components/cta-button';
 import { ArrowLeft } from 'lucide-react';
 
 const fadeUpVariants = {
@@ -43,7 +43,7 @@ export function HeroSection({ onStartConversation, onScrollToAbout }: HeroSectio
                 <div className='flex flex-col gap-2'>
                     <HeroTitle line1='שואלים על ישראל.' line2='מקבלים נתונים רשמיים.' />
                     <div>
-                        <HeroSubtitle>בינה מלאכותית המחוברת למאגרי מידע ציבוריים.</HeroSubtitle>
+                        <HeroSubtitle>AI המחובר למאגרי מידע ציבוריים.</HeroSubtitle>
                         <HeroSubtitle>כל תשובה מבוססת על מקור רשמי.</HeroSubtitle>
                     </div>
                 </div>
@@ -52,24 +52,13 @@ export function HeroSection({ onStartConversation, onScrollToAbout }: HeroSectio
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.5 }}
-                        className='flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto'
                     >
-                        <Button
-                            size='lg'
-                            onClick={onStartConversation}
-                            className='w-full sm:w-48 rounded-full bg-action px-10 py-4 text-base font-semibold text-background hover:bg-action/90'
-                        >
-                            התחילו לשאול
-                            <ArrowLeft className='w-4 h-4' />
-                        </Button>
-                        <Button
-                            size='lg'
-                            variant='outline'
-                            onClick={onScrollToAbout}
-                            className='w-full sm:w-48 rounded-full px-10 py-4 text-base font-semibold'
-                        >
-                            על המערכת
-                        </Button>
+                        <CTAButton onClick={onStartConversation}>
+                            <span className='flex items-center font-bold gap-3'>
+                                התחילו לשאול
+                                <ArrowLeft className='w-4 h-4' />
+                            </span>
+                        </CTAButton>
                     </motion.div>
                 )}
             </div>
