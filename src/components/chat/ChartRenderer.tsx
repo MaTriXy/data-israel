@@ -2,6 +2,7 @@
 
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsiveLine } from '@nivo/line';
+import type { LineCustomSvgLayerProps } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
 import type { DisplayBarChartInput, DisplayChartInput, DisplayLineChartInput, DisplayPieChartInput } from '@/lib/tools';
 import { Shimmer } from '@/components/ai-elements/shimmer';
@@ -15,6 +16,38 @@ const CHART_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var
 const CHART_MARGINS = {
     mobile: { top: 10, right: 0, bottom: 50, left: 20 },
     desktop: { top: 20, right: 20, bottom: 60, left: 80 },
+} as const;
+
+/** Estimate pixel width needed for the longest Y-axis tick label in bar charts */
+function estimateBarAxisLabelWidth(data: Record<string, unknown>[], indexBy: string): number {
+    let maxLen = 0;
+    for (const d of data) {
+        const label = String(d[indexBy] ?? '');
+        if (label.length > maxLen) maxLen = label.length;
+    }
+    // ~7px per character at fontSize 11, plus padding
+    return maxLen * 7 + 16;
+}
+
+/** Estimate pixel width needed for the longest Y-axis tick label */
+function estimateAxisLabelWidth(data: DisplayLineChartInput['data'], isPct: boolean): number {
+    let maxVal = 0;
+    for (const series of data) {
+        for (const pt of series.data) {
+            const abs = Math.abs(typeof pt.y === 'number' ? pt.y : 0);
+            if (abs > maxVal) maxVal = abs;
+        }
+    }
+    const rounded = Math.round(maxVal * 100) / 100;
+    const label = isPct ? `${rounded}%` : String(rounded);
+    // ~7px per character at fontSize 11
+    return label.length * 7 + 12;
+}
+
+/** Base line chart margins — left is computed dynamically */
+const LINE_MARGIN_BASE = {
+    mobile: { top: 10, right: 10, bottom: 50 },
+    desktop: { top: 20, right: 60, bottom: 60 },
 } as const;
 
 const PIE_MARGINS = {
@@ -52,6 +85,9 @@ function useNivoTheme() {
         },
         crosshair: {
             line: { stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' },
+        },
+        legends: {
+            text: { fill: 'var(--foreground)', fontSize: 12 },
         },
         tooltip: {
             container: {
@@ -119,14 +155,63 @@ function BarChartRenderer({ data, config, title }: BarChartRendererProps) {
     } = config;
     const nivoTheme = useNivoTheme();
     const isMobile = useIsMobile();
-    const margin = isMobile ? CHART_MARGINS.mobile : CHART_MARGINS.desktop;
     const isMultiKey = keys.length > 1;
     const labelFor = (key: string) => keyLabels?.[key] ?? key;
     const isPct = valueFormat === 'percent';
+    const fmtNum = (v: number | null | undefined) => {
+        if (v == null) return '';
+        const rounded = Math.round(v * 100) / 100;
+        return isPct ? `${rounded}%` : String(rounded);
+    };
+
+    // Detect if data contains negative values to adjust layout
+    const hasNegative = data.some((d) => keys.some((k) => typeof d[k] === 'number' && (d[k] as number) < 0));
+    const hasPositive = data.some((d) => keys.some((k) => typeof d[k] === 'number' && (d[k] as number) > 0));
+    const hasMixed = hasNegative && hasPositive;
+
+    // For horizontal layout, dynamically compute left margin so Y-axis labels aren't covered by bars
+    const baseMargin = isMobile ? CHART_MARGINS.mobile : CHART_MARGINS.desktop;
+    const dynamicLeft =
+        layout === 'horizontal'
+            ? Math.max(estimateBarAxisLabelWidth(data, indexBy), isMobile ? 60 : 80)
+            : baseMargin.left;
+    const margin = {
+        ...baseMargin,
+        left: dynamicLeft,
+        ...(hasNegative ? { bottom: baseMargin.bottom + 30 } : {}),
+    };
+
+    // Add a zero-line marker when data has both positive and negative values
+    const markers = hasMixed
+        ? [
+              {
+                  axis: layout === 'vertical' ? ('y' as const) : ('x' as const),
+                  value: 0,
+                  lineStyle: {
+                      stroke: 'var(--muted-foreground)',
+                      strokeWidth: 1,
+                      strokeDasharray: '4 4',
+                  },
+              },
+          ]
+        : undefined;
 
     return (
         <div className='w-full' dir='rtl'>
             {title && <h4 className='text-center text-sm font-medium mb-2 text-foreground'>{title}</h4>}
+            {isMultiKey && (
+                <div className='flex items-center justify-center gap-4 mb-1' dir='ltr'>
+                    {keys.map((key, i) => (
+                        <div key={key} className='flex items-center gap-1.5'>
+                            <span
+                                className='inline-block size-2.5 shrink-0 rounded-full'
+                                style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                            />
+                            <span className='text-xs text-muted-foreground'>{labelFor(key)}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className='h-[400px]'>
                 <ResponsiveBar
                     data={data}
@@ -154,35 +239,12 @@ function BarChartRenderer({ data, config, title }: BarChartRendererProps) {
                         tickRotation: 0,
                     }}
                     enableGridX={false}
+                    markers={markers}
                     tooltipLabel={(datum) =>
                         isMultiKey ? `${datum.indexValue} — ${labelFor(String(datum.id))}` : String(datum.indexValue)
                     }
-                    legends={
-                        isMultiKey
-                            ? [
-                                  {
-                                      dataFrom: 'keys',
-                                      data: keys.map((key, i) => ({
-                                          id: key,
-                                          label: labelFor(key),
-                                          color: CHART_COLORS[i % CHART_COLORS.length],
-                                      })),
-                                      anchor: isMobile ? 'bottom' : 'top-right',
-                                      direction: isMobile ? 'row' : 'column',
-                                      translateX: 0,
-                                      translateY: isMobile ? 50 : -10,
-                                      itemsSpacing: isMobile ? 4 : 2,
-                                      itemWidth: 100,
-                                      itemHeight: 20,
-                                      itemDirection: 'right-to-left',
-                                      symbolSize: 12,
-                                      symbolShape: 'circle',
-                                  },
-                              ]
-                            : undefined
-                    }
                     enableLabel={true}
-                    label={(d) => (isPct ? `${d.value}%` : String(d.value ?? ''))}
+                    label={(d) => fmtNum(d.value)}
                     labelSkipWidth={16}
                     labelSkipHeight={16}
                     labelTextColor='#ffffff'
@@ -210,13 +272,52 @@ function LineChartRenderer({ data, config, title }: LineChartRendererProps) {
     const { valueFormat = 'number', enableArea = false, curve = 'monotoneX' } = config;
     const nivoTheme = useNivoTheme();
     const isMobile = useIsMobile();
-    const margin = isMobile ? CHART_MARGINS.mobile : CHART_MARGINS.desktop;
     const isPct = valueFormat === 'percent';
+    const baseMargin = isMobile ? LINE_MARGIN_BASE.mobile : LINE_MARGIN_BASE.desktop;
+    const axisWidth = estimateAxisLabelWidth(data, isPct);
+    const margin = { ...baseMargin, left: Math.max(axisWidth + 10, isMobile ? 50 : 70) };
+    const fmtNum = (v: number | null | undefined) => {
+        if (v == null) return '';
+        const rounded = Math.round(v * 100) / 100;
+        return isPct ? `${rounded}%` : String(rounded);
+    };
+
+    // Custom layer that renders point labels with edge-awareness:
+    // skips first/last points to avoid overlap with Y-axis and right edge
+    const PointLabelsLayer = ({ points, innerWidth }: LineCustomSvgLayerProps<{ id: string; data: { x: string | number; y: number }[] }>) => {
+        if (isMobile) return null;
+        const edgePad = 40;
+        return (
+            <g>
+                {points.map((point) => {
+                    if (point.x < edgePad || point.x > innerWidth - edgePad) return null;
+                    const yVal = point.data.y;
+                    const label = fmtNum(typeof yVal === 'number' ? yVal : null);
+                    if (!label) return null;
+                    return (
+                        <text
+                            key={point.id}
+                            x={point.x}
+                            y={point.y - 14}
+                            textAnchor='middle'
+                            dominantBaseline='auto'
+                            style={{
+                                fill: 'var(--muted-foreground)',
+                                fontSize: 11,
+                            }}
+                        >
+                            {label}
+                        </text>
+                    );
+                })}
+            </g>
+        );
+    };
 
     return (
         <div className='w-full' dir='rtl'>
             {title && <h4 className='text-center text-sm font-medium mb-2 text-foreground'>{title}</h4>}
-            <div className='h-[400px]'>
+            <div className='h-[400px] [&_svg]:overflow-visible'>
                 <ResponsiveLine
                     data={data}
                     margin={margin}
@@ -235,16 +336,27 @@ function LineChartRenderer({ data, config, title }: LineChartRendererProps) {
                         tickSize: 0,
                         tickPadding: 8,
                         tickRotation: 0,
-                        format: isPct ? (v) => `${v}%` : undefined,
+                        format: (v) => fmtNum(typeof v === 'number' ? v : Number(v)),
                     }}
                     enableGridX={false}
+                    layers={[
+                        'grid',
+                        'markers',
+                        'axes',
+                        'areas',
+                        'crosshair',
+                        'lines',
+                        'points',
+                        'slices',
+                        'mesh',
+                        'legends',
+                        PointLabelsLayer,
+                    ]}
                     enablePoints={true}
                     pointSize={8}
                     pointColor={{ from: 'color' }}
                     pointBorderWidth={0}
-                    enablePointLabel={true}
-                    pointLabel={(d) => (isPct ? `${d.y}%` : String(d.y ?? ''))}
-                    pointLabelYOffset={-14}
+                    enablePointLabel={false}
                     enableArea={enableArea}
                     areaOpacity={0.1}
                     areaBlendMode='normal'

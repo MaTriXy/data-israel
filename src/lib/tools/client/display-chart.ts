@@ -41,7 +41,7 @@ export const displayBarChartInputSchema = z.object({
             .record(z.string(), z.string())
             .optional()
             .describe(
-                'Hebrew display labels for each key, used in tooltip and legend. e.g. { "delays": "איחורים", "onTime": "הגעה בזמן" }. Required when keys has more than one entry.',
+                'REQUIRED for multi-key charts. Maps each English key to its Hebrew display label for legend and tooltip. e.g. { "delays": "איחורים", "onTime": "הגעה בזמן" }. Without this, raw English keys appear in the legend. ALWAYS provide when keys.length > 1.',
             ),
         valueFormat: z
             .enum(['number', 'percent'])
@@ -80,13 +80,14 @@ Guidelines:
 - Category VALUES (the labels on the axis) MUST be in Hebrew
 - Field NAMES (indexBy, keys) MUST be simple English identifiers (e.g. "category", "value", "growth_rate") — NEVER Hebrew
 - NEVER include an "index" property in data objects (reserved by chart library)
+- When using multiple keys, you MUST provide keyLabels mapping EVERY key to a Hebrew label — without keyLabels, raw English keys appear in the chart legend
 - Limit data to 20 items max for readability
 
 Example data format:
   Single key:
     data: [{ category: "תל אביב", value: 120 }, { category: "חיפה", value: 85 }]
     config: { indexBy: "category", keys: ["value"] }
-  Multiple keys (MUST include keyLabels):
+  Multiple keys (keyLabels is MANDATORY):
     data: [{ city: "הרצליה", delays: 320, onTime: 2860 }]
     config: { indexBy: "city", keys: ["delays", "onTime"], keyLabels: { "delays": "איחורים", "onTime": "הגעה בזמן" } }`,
     inputSchema: displayBarChartInputSchema,
