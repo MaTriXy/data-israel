@@ -9,6 +9,11 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { ConvexVector } from '@mastra/convex';
 import { openrouter } from '@openrouter/ai-sdk-provider';
+import {
+    PromptInjectionDetector,
+    UnicodeNormalizer,
+    SystemPromptScrubber,
+} from '@mastra/core/processors';
 import { getMastraModelId } from '../model';
 import { ROUTING_CONFIG } from './config';
 import { AgentConfig } from '../../agent.config';
@@ -18,6 +23,9 @@ import { cbsAgent } from '../cbs';
 import { datagovAgent } from '../datagov';
 import { TruncateToolResultsProcessor } from '../../processors/truncate-tool-results.processor';
 import { ENV } from '@/lib/env';
+
+/** Fast, cheap model for security classification processors */
+const GUARD_MODEL = 'openrouter/google/gemini-2.5-flash-lite-preview-09-2025';
 
 const { MEMORY } = AgentConfig;
 
@@ -60,7 +68,23 @@ export function createRoutingAgent(modelId: string, subAgents: Record<string, Ag
             ...ClientTools,
         },
         scorers: AGENT_SCORERS,
-        outputProcessors: [new TruncateToolResultsProcessor()],
+        inputProcessors: [
+            new UnicodeNormalizer({ stripControlChars: true, collapseWhitespace: true }),
+            new PromptInjectionDetector({
+                model: GUARD_MODEL,
+                threshold: 0.8,
+                strategy: 'block',
+                detectionTypes: ['injection', 'jailbreak', 'system-override'],
+            }),
+        ],
+        outputProcessors: [
+            new SystemPromptScrubber({
+                model: GUARD_MODEL,
+                strategy: 'redact',
+                redactionMethod: 'remove',
+            }),
+            new TruncateToolResultsProcessor(),
+        ],
     });
 }
 
