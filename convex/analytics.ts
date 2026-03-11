@@ -206,11 +206,11 @@ export const getOverviewStats = query({
             totalRegisteredUsers > 0 ? Math.round((registeredWhoOpenedThreads / totalRegisteredUsers) * 100) : 0;
         const guestConversionPct = totalGuests > 0 ? Math.round((guestsWhoOpenedThreads / totalGuests) * 100) : 0;
 
-        // --- Per-user averages (thread counts split by user type) ---
+        // --- Per-user averages (thread counts split by user type, including empty) ---
         let registeredThreadCount = 0;
         let guestThreadCount = 0;
 
-        for (const thread of activeThreads) {
+        for (const thread of threads) {
             if (registeredClerkIds.has(thread.resourceId)) {
                 registeredThreadCount++;
             } else {
