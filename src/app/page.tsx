@@ -34,19 +34,18 @@ export default function Home() {
 
     return (
         <div ref={scrollRef} className='h-full w-full overflow-y-auto overflow-x-clip'>
-            {/* GitHub link — top left corner */}
-            <a
-                href='https://github.com/LiorVainer/data-israel'
-                target='_blank'
-                rel='noopener noreferrer'
-                dir='ltr'
-                className='fixed top-4 left-4 z-50 rounded-full border border-border/40 bg-card/60 backdrop-blur-sm p-2.5 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors'
-                aria-label='GitHub'
-            >
-                <Github className='w-5 h-5' />
-            </a>
-
             <div className='relative flex min-h-dvh flex-col items-center justify-center px-4 md:px-0'>
+                {/* GitHub link — top left corner */}
+                <a
+                    href='https://github.com/LiorVainer/data-israel'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    dir='ltr'
+                    className='absolute top-4 left-4 z-20 text-muted-foreground hover:text-foreground transition-colors'
+                    aria-label='GitHub'
+                >
+                    <Github className='w-6 h-6' />
+                </a>
                 {/* Hero glows */}
                 <AmbientGlow top='15%' left='15%' size={glowSize} />
                 <AmbientGlow top='80%' left='85%' size={glowSize} />
@@ -108,12 +107,11 @@ export default function Home() {
                     <AmbientGlow top='75%' left='20%' size={glowSizeSm} />
                     <HowItWorksSection />
                 </div>
-            </div>
 
-            {/* Contact section */}
-            <div className='relative overflow-visible pb-32'>
-                <AmbientGlow top='50%' left='50%' size={glowSizeSm} />
-                <ContactSection />
+                <div className='relative overflow-visible'>
+                    <AmbientGlow top='50%' left='50%' size={glowSizeSm} />
+                    <ContactSection />
+                </div>
             </div>
 
             <Footer />
