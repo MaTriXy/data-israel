@@ -66,6 +66,34 @@ function toIsoString(ts: number): string {
     return new Date(ts).toISOString();
 }
 
+/** Extract user message text from mastra_messages content field. */
+function extractMessageText(content: unknown): string {
+    if (typeof content !== 'string') return '';
+    try {
+        const parsed: unknown = JSON.parse(content);
+        if (typeof parsed === 'string') return parsed;
+        if (parsed !== null && typeof parsed === 'object') {
+            const obj = parsed as Record<string, unknown>;
+            if (Array.isArray(obj.parts)) {
+                const textPart = (obj.parts as Array<{ type?: string; text?: string }>).find(
+                    (p) => p.type === 'text',
+                );
+                return textPart?.text ?? '';
+            } else if (Array.isArray(parsed)) {
+                const textPart = (parsed as Array<{ type?: string; text?: string }>).find(
+                    (p) => p.type === 'text',
+                );
+                return textPart?.text ?? '';
+            } else if (typeof obj.text === 'string') {
+                return obj.text;
+            }
+        }
+    } catch {
+        return content;
+    }
+    return '';
+}
+
 /** Filter out sub-agent threads and internal threads (resourceId "routingAgent"). */
 function isMainThread(thread: Record<string, unknown>): boolean {
     const resourceId = thread.resourceId as string;
@@ -114,13 +142,14 @@ export const getOverviewStats = query({
                 : await ctx.db.query('mastra_threads').collect();
 
         const threads = allThreads.filter(isMainThread);
-        const totalThreads = threads.length;
 
         // --- Count messages from thread_usage (lightweight) instead of mastra_messages ---
         // mastra_messages has huge content fields that exceed Convex's 16MB read limit.
         // thread_usage has one small record per agent turn ≈ one user message.
+        // Only count threads that have at least 1 message (skip abandoned/empty threads).
         let totalMessages = 0;
         const messagesByResourceId = new Map<string, number>();
+        const activeThreads: typeof threads = [];
 
         for (const thread of threads) {
             const usageRecords = await ctx.db
@@ -128,15 +157,18 @@ export const getOverviewStats = query({
                 .withIndex('by_thread', (q) => q.eq('threadId', thread.id))
                 .collect();
             const turnCount = usageRecords.length;
-            totalMessages += turnCount;
             if (turnCount > 0) {
+                activeThreads.push(thread);
+                totalMessages += turnCount;
                 const prev = messagesByResourceId.get(thread.resourceId) ?? 0;
                 messagesByResourceId.set(thread.resourceId, prev + turnCount);
             }
         }
 
-        // --- Unique active users (distinct resourceId across threads in range) ---
-        const activeResourceIds = new Set(threads.map((t) => t.resourceId));
+        const totalThreads = activeThreads.length;
+
+        // --- Unique active users (distinct resourceId across active threads) ---
+        const activeResourceIds = new Set(activeThreads.map((t) => t.resourceId));
         const uniqueActiveUsers = activeResourceIds.size;
 
         // --- Total registered users & guests (all-time counts) ---
@@ -176,7 +208,7 @@ export const getOverviewStats = query({
         let registeredThreadCount = 0;
         let guestThreadCount = 0;
 
-        for (const thread of threads) {
+        for (const thread of activeThreads) {
             if (registeredClerkIds.has(thread.resourceId)) {
                 registeredThreadCount++;
             } else {
@@ -268,39 +300,11 @@ export const getThreadOrigins = query({
                 .first();
 
             if (!firstMsg) {
-                counts.set(FREE_TEXT_LABEL, (counts.get(FREE_TEXT_LABEL) ?? 0) + 1);
+                // Skip empty/abandoned threads — no user message means no real conversation
                 continue;
             }
 
-            // content is stored as JSON string in format:
-            // {"format":2,"parts":[{"type":"text","text":"actual message"}]}
-            let messageText = '';
-            try {
-                const parsed: unknown = JSON.parse(firstMsg.content as string);
-                if (typeof parsed === 'string') {
-                    messageText = parsed;
-                } else if (parsed !== null && typeof parsed === 'object') {
-                    const obj = parsed as Record<string, unknown>;
-                    if (Array.isArray(obj.parts)) {
-                        // Format v2: {format: 2, parts: [{type: "text", text: "..."}]}
-                        const textPart = (obj.parts as Array<{ type?: string; text?: string }>).find(
-                            (p) => p.type === 'text',
-                        );
-                        messageText = textPart?.text ?? '';
-                    } else if (Array.isArray(parsed)) {
-                        // Legacy: direct array of parts
-                        const textPart = (parsed as Array<{ type?: string; text?: string }>).find(
-                            (p) => p.type === 'text',
-                        );
-                        messageText = textPart?.text ?? '';
-                    } else if (typeof obj.text === 'string') {
-                        messageText = obj.text;
-                    }
-                }
-            } catch {
-                // Not JSON — use raw content string
-                messageText = typeof firstMsg.content === 'string' ? firstMsg.content : '';
-            }
+            const messageText = extractMessageText(firstMsg.content);
 
             const label = promptToLabel.get(messageText);
             if (label !== undefined) {
@@ -345,10 +349,17 @@ export const getThreadsOverTime = query({
 
         const threads = allThreads.filter(isMainThread);
 
-        // Group threads by time bucket
+        // Group threads by time bucket (skip empty/abandoned threads)
         const bucketCounts = new Map<string, number>();
 
         for (const thread of threads) {
+            // Skip threads with no messages
+            const hasMessage = await ctx.db
+                .query('thread_usage')
+                .withIndex('by_thread', (q) => q.eq('threadId', thread.id))
+                .first();
+            if (!hasMessage) continue;
+
             const d = new Date(thread.createdAt as string);
             let bucket: string;
 
@@ -469,5 +480,60 @@ export const getAgentDelegationBreakdown = query({
         if (cbsCount > 0) results.push({ label: AGENT_LABELS.CBS, count: cbsCount });
 
         return results.sort((a, b) => b.count - a.count);
+    },
+});
+
+// ---------------------------------------------------------------------------
+// getFreeTextPrompts
+// ---------------------------------------------------------------------------
+
+export interface FreeTextPromptEntry {
+    text: string;
+    createdAt: string;
+}
+
+export const getFreeTextPrompts = query({
+    args: {
+        sinceTimestamp: v.optional(v.number()),
+    },
+    handler: async (ctx, { sinceTimestamp }): Promise<FreeTextPromptEntry[]> => {
+        const sinceIso = sinceTimestamp !== undefined ? toIsoString(sinceTimestamp) : undefined;
+
+        const allThreads =
+            sinceIso !== undefined
+                ? await ctx.db
+                      .query('mastra_threads')
+                      .withIndex('by_created', (q) => q.gte('createdAt', sinceIso))
+                      .collect()
+                : await ctx.db.query('mastra_threads').collect();
+
+        const threads = allThreads.filter(isMainThread);
+
+        // Build prompt→label lookup for detecting prompt-card messages
+        const promptCardTexts = new Set(PROMPT_CARD_ENTRIES.map((c) => c.prompt));
+
+        const freeTexts: FreeTextPromptEntry[] = [];
+
+        for (const thread of threads) {
+            const firstMsg = await ctx.db
+                .query('mastra_messages')
+                .withIndex('by_thread_created', (q) => q.eq('thread_id', thread.id))
+                .filter((q) => q.eq(q.field('role'), 'user'))
+                .order('asc')
+                .first();
+
+            if (!firstMsg) continue;
+
+            const messageText = extractMessageText(firstMsg.content);
+            if (!messageText || promptCardTexts.has(messageText)) continue;
+
+            freeTexts.push({
+                text: messageText,
+                createdAt: thread.createdAt as string,
+            });
+        }
+
+        // Return sorted by createdAt descending (newest first)
+        return freeTexts.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     },
 });

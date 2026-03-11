@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ThreadOriginChart } from './charts/ThreadOriginChart';
 import { ThreadsOverTimeChart } from './charts/ThreadsOverTimeChart';
 import { AgentDelegationChart } from './charts/AgentDelegationChart';
+import { FreeTextPromptsList } from './FreeTextPromptsList';
 
 // ---------------------------------------------------------------------------
 // Time range types
@@ -144,6 +145,7 @@ export function AnalyticsDashboard() {
     const threadOrigins = useQuery(api.analytics.getThreadOrigins, { sinceTimestamp });
     const threadsOverTime = useQuery(api.analytics.getThreadsOverTime, { sinceTimestamp, bucketSize });
     const agentDelegation = useQuery(api.analytics.getAgentDelegationBreakdown, { sinceTimestamp });
+    const freeTextPrompts = useQuery(api.analytics.getFreeTextPrompts, { sinceTimestamp });
 
     return (
         <div className='space-y-6'>
@@ -208,6 +210,13 @@ export function AnalyticsDashboard() {
                                     <AgentDelegationChart data={agentDelegation ?? []} isMobile={isMobile} />
                                 </div>
                             </div>
+                        </div>
+                    </section>
+
+                    {/* Section D: Free text prompts */}
+                    <section aria-label='שאילתות חופשיות'>
+                        <div className='rounded-lg border bg-card p-4'>
+                            <FreeTextPromptsList data={freeTextPrompts ?? []} />
                         </div>
                     </section>
                 </>
