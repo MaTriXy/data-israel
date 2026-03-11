@@ -24,6 +24,7 @@ const LINKS = [
 export function ContactSection() {
     return (
         <section className='w-full max-w-4xl mx-auto px-4'>
+            <div className='mx-auto mb-24 h-px w-2/3 bg-border/30' />
             <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -32,8 +33,8 @@ export function ContactSection() {
                 className='flex flex-col items-center gap-6 text-center'
             >
                 <h2 className='text-2xl md:text-3xl font-bold text-foreground'>צרו קשר</h2>
-                <p className='text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl'>
-                    שאלות, הצעות לשיפור או סתם רוצים לומר תודה? נשמח לשמוע מכם.
+                <p className='text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl'>
+                    שאלות, הצעות לשיפור או סתם רוצים לדבר בקשר למערכת? נשמח לשמוע מכם.
                 </p>
 
                 <div className='flex flex-wrap items-center justify-center gap-3'>
