@@ -23,8 +23,9 @@ import { SidebarToolbar } from '@/components/navigation/SidebarToolbar';
 import { ThreadsSidebarGroup } from '@/components/threads/ThreadsSidebarGroup';
 import { AmbientGlow } from '@/components/ui/AmbientGlow';
 import { Button } from '@/components/ui/button';
-import { SquarePen } from 'lucide-react';
+import { MessageSquareText, SquarePen } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 /**
  * Logo button that navigates home and closes the sidebar.
@@ -148,6 +149,16 @@ export function AppSidebar({
                 </SidebarContent>
 
                 <SidebarFooter>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip='משוב'>
+                                <Link href='/feedback'>
+                                    <MessageSquareText />
+                                    <span>שלחו משוב</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
                     <NavUser />
                 </SidebarFooter>
 

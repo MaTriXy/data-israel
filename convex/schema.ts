@@ -163,6 +163,17 @@ export default defineSchema({
     }).index('by_agent', ['agentId', 'createdAt']),
 
     /**
+     * Feedback table - stores user feedback submissions
+     */
+    feedback: defineTable({
+        name: v.string(),
+        email: v.string(),
+        title: v.string(),
+        description: v.string(),
+        createdAt: v.number(),
+    }).index('by_created', ['createdAt']),
+
+    /**
      * Mastra tables - used by @mastra/convex for agent memory, threads, and storage
      */
     mastra_threads: mastraThreadsTable,

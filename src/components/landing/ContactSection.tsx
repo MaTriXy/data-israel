@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Github, Linkedin, Mail } from 'lucide-react';
+import { Github, Linkedin, Mail, MessageSquareText } from 'lucide-react';
+import Link from 'next/link';
 
 const LINKS = [
     {
@@ -37,6 +38,13 @@ export function ContactSection() {
                 </p>
 
                 <div className='flex flex-wrap items-center justify-center gap-3'>
+                    <Link
+                        href='/feedback'
+                        className='inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 backdrop-blur-sm px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-primary/20'
+                    >
+                        <MessageSquareText className='w-5 h-5' />
+                        שלחו משוב
+                    </Link>
                     {LINKS.map((link) => (
                         <a
                             key={link.href}

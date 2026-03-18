@@ -11,6 +11,7 @@
 import type * as aiModels from "../aiModels.js";
 import type * as analytics from "../analytics.js";
 import type * as datasets from "../datasets.js";
+import type * as feedback from "../feedback.js";
 import type * as guests from "../guests.js";
 import type * as http from "../http.js";
 import type * as mastra_storage from "../mastra/storage.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   aiModels: typeof aiModels;
   analytics: typeof analytics;
   datasets: typeof datasets;
+  feedback: typeof feedback;
   guests: typeof guests;
   http: typeof http;
   "mastra/storage": typeof mastra_storage;
