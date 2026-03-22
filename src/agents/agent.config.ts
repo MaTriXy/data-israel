@@ -12,6 +12,23 @@ export interface AvailableModel {
 
 import { ENV } from '@/lib/env';
 
+/**
+ * OpenRouter provider routing options.
+ * Forces all requests through Google AI Studio (not Vertex AI)
+ * to use the BYOK API key configured in OpenRouter.
+ *
+ * Provider slug reference: https://openrouter.ai/docs/guides/routing/provider-selection
+ * - "google-ai-studio" = Google AI Studio (uses BYOK Gemini API key)
+ * - "google-vertex" = Google Vertex AI (separate billing)
+ */
+export const OPENROUTER_PROVIDER_OPTIONS = {
+    openrouter: {
+        provider: {
+            only: ['google-ai-studio'] as string[],
+        },
+    },
+};
+
 export const AgentConfig = {
     /** Model configuration */
     MODEL: {
